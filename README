@@ -1,0 +1,43 @@
+This is a mirror of http://www.vim.org/scripts/script.php?script_id=1661
+
+DESCRIPTION
+Re-executes the last / Nth ex command previously entered in command mode. An
+optional pattern is used to locate the most recent matching command. This is
+similar to the command-line window (q:), or navigating the command history via
+<Up> and <Down>, but provides an even faster way to re-execute a command if
+you remember some characters or a pattern that identifies the command line.
+The redocommand itself will not be included in the command history. Global
+literal replacement can be done via 'old=new' arguments. 
+
+This is modeled after the 'fc -s' command from the Posix shell (which is often
+aliased to 'r'). 
+
+USAGE
+:[N]Redocommand (or abbreviated :R)
+			Execute the last / Nth ex command. 
+
+:[N]Redocommand {pattern}
+			Execute the last / Nth ex command that matches
+			{pattern}.
+			Settings such as 'magic' and 'ignorecase' apply. 
+
+			With N=0, only the very last command from the history
+			is executed if it matches {pattern}; the entire
+			history isn't searched. 
+
+:[N]Redocommand old=new [old2=new2 ...] [{pattern}]
+			Execute the last / Nth ex command (that matches
+			{pattern}), replacing all literal occurrences of 'old'
+			with 'new'. 
+
+EXAMPLE
+Given the following history:
+    :history
+    1 e foo.txt 
+    2 %s/foo/\0bar/g 
+    3 w bar.txt 
+:Redocommand		will execute :w bar.txt
+:Redocommand %		will execute :%s/foo\0/bar/g
+:Redocommand foo	will execute :%s/foo\0/bar/g
+:2Redocommand foo	will execute :e foo.txt
+:Redocommand b=B .txt=	will execute ':w bar.txt' as :w Bar
