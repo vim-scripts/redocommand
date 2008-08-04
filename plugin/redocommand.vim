@@ -29,6 +29,9 @@
 "   Put the script into your user or system VIM plugin directory (e.g.
 "   ~/.vim/plugin). 
 "
+" DEPENDENCIES:
+"   - Requires VIM 6.2 or higher.  
+"
 " CONFIGURATION:
 "   If you do not want the shorthand ':R' command, define (e.g. in your .vimrc): 
 "	let g:redocommand_no_short_command = 1
@@ -41,24 +44,27 @@
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 " REVISION	DATE		REMARKS 
+"   1.00.003	04-Aug-2008	Better handling of errors during execution of
+"				the command. 
+"				The redone command is added to the history. 
 "	0.02	30-Mar-2006	Added requirements check.
 "				Added (configurable) short command :R. 
 "				Replaced quirky 'RemoveRedocommandFromHistory()'
 "				with unconditional remove from history. 
 "	0.01	23-May-2005	file creation
 
-" Avoid installing twice or when in compatible mode
-if exists("loaded_redocommand")
+" Avoid installing twice or when in unsupported VIM version.  
+if exists('g:loaded_redocommand') || (v:version < 602)
     finish
 endif
-let loaded_redocommand = 1
+let g:loaded_redocommand = 1
 
 " Requirement: command-line history compiled-in and activated
-if (! has("cmdline_hist")) || (&history < 2) 
+if (! has('cmdline_hist')) || (&history < 2) 
     finish
 endif
 
-if ! exists("g:redocommand_no_short_command")
+if ! exists('g:redocommand_no_short_command')
     command! -nargs=? -complete=command R call <SID>Redocommand(<f-args>)
 endif
 command! -nargs=? -complete=command Redocommand call <SID>Redocommand(<f-args>)
@@ -80,21 +86,31 @@ function! s:Redocommand( ... )
     " If someone foolishly uses :Redocommand in a mapping or script (where
     " commands are not added to the history), an innocent last history entry
     " will be removed - bad luck. 
-    call histdel("cmd", -1)
+    call histdel('cmd', -1)
 
-    let l:histnr = histnr("cmd") 
+    let l:histnr = histnr('cmd') 
     while l:histnr > 0
-	let l:historyCommand = histget("cmd", l:histnr)
+	let l:historyCommand = histget('cmd', l:histnr)
 	if l:historyCommand =~ l:commandexpr
 	    echo ":" . l:historyCommand
-	    execute l:historyCommand
+	    try
+		execute l:historyCommand
+		call histadd(':', l:historyCommand)
+	    catch /^Vim\%((\a\+)\)\=:E/
+		echohl ErrorMsg
+		" v:exception contains what is normally in v:errmsg, but with extra
+		" exception source info prepended, which we cut away. 
+		echomsg substitute(v:exception, '^Vim\%((\a\+)\)\=:', '', '')
+		echohl NONE
+	    endtry
 	    return
 	endif
 	let l:histnr = l:histnr - 1
     endwhile
 
     echohl WarningMsg
-    echo "No command matching \"" . l:commandexpr . "\" found in history."
+    echo 'No command matching "' . l:commandexpr . '" found in history.'
     echohl None
 endfunction
 
+" vim: set sts=4 sw=4 noexpandtab ff=unix fdm=syntax :
