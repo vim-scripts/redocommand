@@ -25,10 +25,22 @@ USAGE
 			is executed if it matches {pattern}; the entire
 			history isn't searched. 
 
-:[N]Redocommand old=new [old2=new2 ...] [{pattern}]
+			Note: If the {pattern} starts with : (and there is no
+			history command matching the literal ":cmd"), the
+			history is searched for "cmd", anchored at the
+			beginning. This is convenient because ":R :echo" is
+			more intuitive to type than ":R ^echo". 
+
+:[N]Redocommand {old}={new} [{old2}={new2} ...] [{pattern}]
 			Execute the last / Nth ex command (that matches
-			{pattern}), replacing all literal occurrences of 'old'
-			with 'new'. 
+			{pattern}), replacing all literal occurrences of {old}
+			with {new}. 
+								 *:RedoRepeat*
+:[N]RedoRepeat [{old}={new} ...] (or abbreviated :RR)
+			Execute the last / Nth ex command that was repeated
+			via :Redocommand. Any replacements done the last time
+			are still in effect; new replacements of {old} to
+			{new} can be added. 
 
 EXAMPLE
 Given the following history:
@@ -41,3 +53,10 @@ Given the following history:
 :Redocommand foo	will execute :%s/foo\0/bar/g
 :2Redocommand foo	will execute :e foo.txt
 :Redocommand b=B .txt=	will execute ':w bar.txt' as :w Bar
+
+:echo "another command"
+:RedoRepeat		will again execute :w Bar
+:2RedoRepeat		will execute :%s/foo\0/bar/g
+:RedoRepeat B=F		will execute :w Far
+:Redocommand		will execute :echo "another command"
+:RedoRepeat		will execute :w Far

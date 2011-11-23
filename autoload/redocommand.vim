@@ -2,11 +2,23 @@
 "
 " DEPENDENCIES:
 "
-" Copyright: (C) 2005-2009 by Ingo Karkat
+" Copyright: (C) 2005-2011 by Ingo Karkat
 "   The VIM LICENSE applies to this script; see ':help copyright'. 
 "
 " Maintainer:	Ingo Karkat <ingo@karkat.de>
 " REVISION	DATE		REMARKS 
+"   1.30.004	22-Nov-2011	ENH: Allow repeat of any :Redocommand via
+"				[count].
+"   1.30.003	21-Nov-2011	Factor out s:SubstituteAndRedo(). 
+"				ENH: Add :RedoRepeat command to repeat the last
+"				:Redocommand when other Ex commands (e.g.
+"				:wnext) were issued in between. 
+"   1.21.002	15-Oct-2009	ENH: If the {pattern} starts with : (and there
+"				is no history command matching the literal
+"				":cmd"), the history is searched for "cmd",
+"				anchored at the beginning. This is convenient
+"				because ":R :echo" is more intuitive to type
+"				than ":R ^echo". 
 "   1.20.001	03-Apr-2009	Moved functions from plugin to separate autoload
 "				script. 
 "				...
@@ -43,7 +55,48 @@ function! s:WarnAboutNoMatch( commandexpr, count, matchCnt )
     echomsg v:warningmsg
     echohl None
 endfunction
+let s:redoCommands = []
+function! s:SubstituteAndRedo( historyCommand, substitutions )
+    let l:redoCommand = s:Substitute(a:historyCommand, a:substitutions)
+    echo ':' . l:redoCommand
+    try
+	execute l:redoCommand
+	call histadd('cmd', l:redoCommand)
+    catch /^Vim\%((\a\+)\)\=:E/
+	echohl ErrorMsg
+	" v:exception contains what is normally in v:errmsg, but with extra
+	" exception source info prepended, which we cut away. 
+	let v:errmsg = substitute(v:exception, '^Vim\%((\a\+)\)\=:', '', '')
+	echomsg v:errmsg
+	echohl None
+    endtry
 
+    return l:redoCommand
+endfunction
+function! s:Redocommand( count, substitutions, commandexpr )
+    let l:matchCnt = 0
+    let l:histnr = histnr('cmd') 
+    while l:histnr > 0
+	let l:historyCommand = histget('cmd', l:histnr)
+	if l:historyCommand =~ a:commandexpr
+	    let l:matchCnt += 1
+	    if a:count == 0 || a:count == l:matchCnt
+		let l:redoCommand = s:SubstituteAndRedo(l:historyCommand, a:substitutions)
+		call add(s:redoCommands, l:redoCommand)
+		return
+	    endif
+	endif
+	let l:histnr -= 1
+	if a:count == 0 | break | endif
+    endwhile
+
+    if a:commandexpr =~# ':'
+	call s:Redocommand(a:count, a:substitutions, substitute(a:commandexpr, '^:\+', '', ''))
+	return
+    endif
+
+    call s:WarnAboutNoMatch(a:commandexpr, a:count, l:matchCnt)
+endfunction
 function! redocommand#Redocommand( count, ... )
     " An empty expression always matches, so this is used for the corner case of
     " no expression passed in, in which the last history command is executed. 
@@ -65,41 +118,39 @@ function! redocommand#Redocommand( count, ... )
 	let l:argIdx += 1
     endwhile
 
-    " The history must not be cluttered with :Redocommands. 
+    " The history must not be cluttered with :Redocommand. 
     " Remove the ':Redocommand' that is currently executed from the history. 
     " If someone foolishly uses :Redocommand in a mapping or script (where
     " commands are not added to the history), an innocent last history entry
     " will be removed - bad luck. 
     call histdel('cmd', -1)
 
-    let l:matchCnt = 0
-    let l:histnr = histnr('cmd') 
-    while l:histnr > 0
-	let l:historyCommand = histget('cmd', l:histnr)
-	if l:historyCommand =~ l:commandexpr
-	    let l:matchCnt += 1
-	    if a:count == 0 || a:count == l:matchCnt
-		let l:newCommand = s:Substitute( l:historyCommand, l:substitutions )
-		echo ':' . l:newCommand
-		try
-		    execute l:newCommand
-		    call histadd('cmd', l:newCommand)
-		catch /^Vim\%((\a\+)\)\=:E/
-		    echohl ErrorMsg
-		    " v:exception contains what is normally in v:errmsg, but with extra
-		    " exception source info prepended, which we cut away. 
-		    let v:errmsg = substitute(v:exception, '^Vim\%((\a\+)\)\=:', '', '')
-		    echomsg v:errmsg
-		    echohl None
-		endtry
-		return
-	    endif
-	endif
-	let l:histnr -= 1
-	if a:count == 0 | break | endif
-    endwhile
-
-    call s:WarnAboutNoMatch(l:commandexpr, a:count, l:matchCnt)
+    call s:Redocommand(a:count, l:substitutions, l:commandexpr)
 endfunction
 
-" vim: set sts=4 sw=4 noexpandtab ff=unix fdm=syntax :
+function! redocommand#RedoRepeat( count, ... )
+    " The history must not be cluttered with :RedoRepeat. 
+    " Remove the ':RedoRepeat' that is currently executed from the history. 
+    call histdel('cmd', -1)
+
+    if empty(s:redoCommands)
+	let v:errmsg = 'No :Redocommand to repeat'
+	echohl ErrorMsg
+	echomsg v:errmsg
+	echohl None
+
+	return
+    elseif len(s:redoCommands) < a:count
+	let v:errmsg = printf('Only %d :Redocommand%s to repeat', len(s:redoCommands), (len(s:redoCommands) == 1 ? '' : 's'))
+	echohl ErrorMsg
+	echomsg v:errmsg
+	echohl None
+
+	return
+    endif
+
+    let l:redoCommand = (a:count == 0 ? s:redoCommands[-1] : s:redoCommands[a:count - 1])
+    call s:SubstituteAndRedo(l:redoCommand, a:000)
+endfunction
+
+" vim: set ts=8 sts=4 sw=4 noexpandtab ff=unix fdm=syntax :

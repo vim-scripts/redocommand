@@ -3,10 +3,10 @@
 			REDOCOMMAND    by Ingo Karkat
 							     *redocommand.vim*
 description			|redocommand-description|
-usage	    			|redocommand-usage|
-example	    			|redocommand-example|
-installation   			|redocommand-installation|
-configuration  			|redocommand-configuration|
+usage				|redocommand-usage|
+example				|redocommand-example|
+installation			|redocommand-installation|
+configuration			|redocommand-configuration|
 integration			|redocommand-integration|
 limitations			|redocommand-limitations|
 assumptions			|redocommand-assumptions|
@@ -43,10 +43,22 @@ USAGE							   *redocommand-usage*
 			is executed if it matches {pattern}; the entire
 			history isn't searched. 
 
-:[N]Redocommand old=new [old2=new2 ...] [{pattern}]
+			Note: If the {pattern} starts with : (and there is no
+			history command matching the literal ":cmd"), the
+			history is searched for "cmd", anchored at the
+			beginning. This is convenient because ":R :echo" is
+			more intuitive to type than ":R ^echo". 
+
+:[N]Redocommand {old}={new} [{old2}={new2} ...] [{pattern}]
 			Execute the last / Nth ex command (that matches
-			{pattern}), replacing all literal occurrences of 'old'
-			with 'new'. 
+			{pattern}), replacing all literal occurrences of {old}
+			with {new}. 
+								 *:RedoRepeat*
+:[N]RedoRepeat [{old}={new} ...] (or abbreviated :RR)
+			Execute the last / Nth ex command that was repeated
+			via :Redocommand. Any replacements done the last time
+			are still in effect; new replacements of {old} to
+			{new} can be added. 
 
 ==============================================================================
 EXAMPLE							 *redocommand-example*
@@ -62,48 +74,64 @@ Given the following history: >
 :2Redocommand foo	will execute :e foo.txt
 :Redocommand b=B .txt=	will execute ':w bar.txt' as :w Bar
 
+:echo "another command"
+:RedoRepeat		will again execute :w Bar
+:2RedoRepeat		will execute :%s/foo\0/bar/g
+:RedoRepeat B=F		will execute :w Far
+:Redocommand		will execute :echo "another command"
+:RedoRepeat		will execute :w Far
+
 ==============================================================================
 INSTALLATION					    *redocommand-installation*
 
-This script is packaged as a|vimball|. If you have the "gunzip" decompressor
-in your PATH, simply edit the *.vba.gz package in VIM; otherwise, decompress
-the archive first, e.g. using WinZip. Inside VIM, install by sourcing the
-vimball or via the|:UseVimball|command. >
+This script is packaged as a |vimball|. If you have the "gunzip" decompressor
+in your PATH, simply edit the *.vba.gz package in Vim; otherwise, decompress
+the archive first, e.g. using WinZip. Inside Vim, install by sourcing the
+vimball or via the |:UseVimball| command. >
     vim redocommand.vba.gz
     :so %
-To uninstall, use the|:RmVimball|command. 
+To uninstall, use the |:RmVimball| command. 
 
 DEPENDENCIES					    *redocommand-dependencies*
 
-- Requires VIM 7.0 or higher. 
+- Requires Vim 7.0 or higher. 
 
 ==============================================================================
 CONFIGURATION					   *redocommand-configuration*
 
-If you do not want the shorthand ':R' command, define (e.g. in your|vimrc|): >
+If you do not want the shorthand :R and :RR commands, define (e.g. in your
+|vimrc|): >
     let g:redocommand_no_short_command = 1
 
 ==============================================================================
-LIMITATIONS					     redocommand-limitations
+LIMITATIONS					     *redocommand-limitations*
 
-==============================================================================
-KNOWN PROBLEMS					  redocommand-known-problems
+KNOWN PROBLEMS					  *redocommand-known-problems*
 
-==============================================================================
-TODO							    redocommand-todo
+TODO							    *redocommand-todo*
 
-IDEAS							   redocommand-ideas
+IDEAS							   *redocommand-ideas*
 
 ==============================================================================
 HISTORY							 *redocommand-history*
 
+1.30	23-Nov-2011
+ENH: Add :RedoRepeat command to repeat the last / Nth :Redocommand when other
+Ex commands (e.g. :wnext) were issued in between. 
+
+1.21	15-Oct-2009 (unreleased)
+ENH: If the {pattern} starts with : (and there is no history command matching
+the literal ":cmd"), the history is searched for "cmd", anchored at the
+beginning. This is convenient because ":R :echo" is more intuitive to type
+than ":R ^echo". 
+
 1.20	03-Apr-2009
 - Added optional [count] to repeat the Nth, not the last found match. 
 - Split off documentation into separate help file. Now packaging as VimBall.
-- Using separate autoload script to help speed up VIM startup. 
+- Using separate autoload script to help speed up Vim startup. 
 
 1.10	04-Aug-2008
-Implemented ':Redocommand old=new {pattern}'. Now requiring VIM 7. 
+Implemented ':Redocommand old=new {pattern}'. Now requiring Vim 7. 
 
 1.00	04-Aug-2008
 First published version. 
@@ -112,10 +140,9 @@ First published version.
 Started development. 
 
 ==============================================================================
-Copyright: (C) 2005-2009 by Ingo Karkat
-The VIM LICENSE applies to this script; see|copyright|. 
+Copyright: (C) 2005-2011 Ingo Karkat
+The VIM LICENSE applies to this script; see |copyright|. 
 
 Maintainer:	Ingo Karkat <ingo@karkat.de>
 ==============================================================================
  vim:tw=78:ts=8:ft=help:norl:
-
