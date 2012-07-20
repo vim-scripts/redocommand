@@ -1,4 +1,4 @@
-*redocommand.txt*       Execute commands from the command history. 
+*redocommand.txt*       Execute commands from the command history.
 
 			REDOCOMMAND    by Ingo Karkat
 							     *redocommand.vim*
@@ -23,42 +23,55 @@ similar to the command-line window (q:), or navigating the command history via
 <Up> and <Down>, but provides an even faster way to re-execute a command if
 you remember some characters or a pattern that identifies the command line.
 The redocommand itself will not be included in the command history. Global
-literal replacement can be done via 'old=new' arguments. 
+literal replacement can be done via 'old=new' arguments.
 
 This is modeled after the 'fc -s' command from the Posix shell (which is often
-aliased to 'r'). 
+aliased to 'r').
 
 ==============================================================================
 USAGE							   *redocommand-usage*
 								*:Redocommand*
 :[N]Redocommand (or abbreviated :R)
-			Execute the last / Nth ex command. 
+			Execute the last / Nth ex command.
 
 :[N]Redocommand {pattern}
 			Execute the last / Nth ex command that matches
 			{pattern}.
-			Settings such as 'magic' and 'ignorecase' apply. 
+			Settings such as 'magic' and 'ignorecase' apply.
 
 			With N=0, only the very last command from the history
 			is executed if it matches {pattern}; the entire
-			history isn't searched. 
+			history isn't searched.
 
 			Note: If the {pattern} starts with : (and there is no
 			history command matching the literal ":cmd"), the
 			history is searched for "cmd", anchored at the
 			beginning. This is convenient because ":R :echo" is
-			more intuitive to type than ":R ^echo". 
+			more intuitive to type than ":R ^echo".
 
 :[N]Redocommand {old}={new} [{old2}={new2} ...] [{pattern}]
 			Execute the last / Nth ex command (that matches
 			{pattern}), replacing all literal occurrences of {old}
-			with {new}. 
+			with {new}.
 								 *:RedoRepeat*
-:[N]RedoRepeat [{old}={new} ...] (or abbreviated :RR)
+:[N]RedoRepeat [{old}={new} ...]       (or abbreviated :RR)
 			Execute the last / Nth ex command that was repeated
 			via :Redocommand. Any replacements done the last time
 			are still in effect; new replacements of {old} to
-			{new} can be added. 
+			{new} can be added.
+
+The following variants are useful when you repeatedly use command A in one
+buffer and command B in another. Instead of passing different [N] values to
+:RedoRepeat, just recall from the local redo history.
+							   *:RedoBufferRepeat*
+:[N]RedoBufferRepeat [{old}={new} ...] (or abbreviated :RB)
+			Like |:RedoRepeat|, but repeat the last / Nth ex
+			command repeated in the current buffer.
+							   *:RedoWindowRepeat*
+:[N]RedoWindowRepeat [{old}={new} ...] (or abbreviated :RW)
+			Like |:RedoRepeat|, but repeat the last / Nth ex
+			command repeated in the current window.
+
 
 ==============================================================================
 EXAMPLE							 *redocommand-example*
@@ -90,16 +103,16 @@ the archive first, e.g. using WinZip. Inside Vim, install by sourcing the
 vimball or via the |:UseVimball| command. >
     vim redocommand.vba.gz
     :so %
-To uninstall, use the |:RmVimball| command. 
+To uninstall, use the |:RmVimball| command.
 
 DEPENDENCIES					    *redocommand-dependencies*
 
-- Requires Vim 7.0 or higher. 
+- Requires Vim 7.0 or higher.
 
 ==============================================================================
 CONFIGURATION					   *redocommand-configuration*
 
-If you do not want the shorthand :R and :RR commands, define (e.g. in your
+If you do not want the shorthand :R, :RR, :R... commands, define (e.g. in your
 |vimrc|): >
     let g:redocommand_no_short_command = 1
 
@@ -115,33 +128,39 @@ IDEAS							   *redocommand-ideas*
 ==============================================================================
 HISTORY							 *redocommand-history*
 
+1.40	20-Jul-2012
+ENH: Add :RedoBufferRepeat / :RB and :RedoWindowRepeat / :RW commands. These
+are useful when you repeatedly use command A in one buffer and command B in
+another. Instead of passing different [N] values to :RedoRepeat, just recall
+from the local redo history.
+
 1.30	23-Nov-2011
 ENH: Add :RedoRepeat command to repeat the last / Nth :Redocommand when other
-Ex commands (e.g. :wnext) were issued in between. 
+Ex commands (e.g. :wnext) were issued in between.
 
 1.21	15-Oct-2009 (unreleased)
 ENH: If the {pattern} starts with : (and there is no history command matching
 the literal ":cmd"), the history is searched for "cmd", anchored at the
 beginning. This is convenient because ":R :echo" is more intuitive to type
-than ":R ^echo". 
+than ":R ^echo".
 
 1.20	03-Apr-2009
-- Added optional [count] to repeat the Nth, not the last found match. 
+- Added optional [count] to repeat the Nth, not the last found match.
 - Split off documentation into separate help file. Now packaging as VimBall.
-- Using separate autoload script to help speed up Vim startup. 
+- Using separate autoload script to help speed up Vim startup.
 
 1.10	04-Aug-2008
-Implemented ':Redocommand old=new {pattern}'. Now requiring Vim 7. 
+Implemented ':Redocommand old=new {pattern}'. Now requiring Vim 7.
 
 1.00	04-Aug-2008
-First published version. 
+First published version.
 
 0.01	23-May-2005
-Started development. 
+Started development.
 
 ==============================================================================
-Copyright: (C) 2005-2011 Ingo Karkat
-The VIM LICENSE applies to this script; see |copyright|. 
+Copyright: (C) 2005-2012 Ingo Karkat
+The VIM LICENSE applies to this script; see |copyright|.
 
 Maintainer:	Ingo Karkat <ingo@karkat.de>
 ==============================================================================
